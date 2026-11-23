@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Warm Light</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Warm Light">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#FFE9C7">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: #FFE9C7; -webkit-user-select: none; user-select: none; }
+  #panel {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); width: min(86vw, 360px);
+    background: rgba(40,30,20,.78); color: #fff; font: 15px/1.4 -apple-system, system-ui, sans-serif;
+    border-radius: 16px; padding: 16px 18px; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  #panel.show { opacity: 1; pointer-events: auto; }
+  label { display: block; margin: 6px 0 2px; font-size: 13px; opacity: .85; }
+  input[type=range] { width: 100%; }
+  button { margin-top: 10px; width: 100%; padding: 10px; border: 0; border-radius: 10px; font-size: 15px; background: #fff; color: #222; }
+  #hint { position: fixed; top: calc(14px + env(safe-area-inset-top)); width: 100%; text-align: center;
+    font: 13px -apple-system, system-ui, sans-serif; color: rgba(80,50,20,.55); transition: opacity .6s; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="hint">Tap anywhere for controls</div>
+<div id="panel">
+  <label>Warmth</label>
+  <input id="warm" type="range" min="0" max="100" value="55">
+  <label>Brightness</label>
+  <input id="bright" type="range" min="40" max="100" value="100">
+  <button id="fs">Enter full screen</button>
+</div>
+<script>
+  const body = document.body, panel = document.getElementById('panel'), hint = document.getElementById('hint');
+  const warm = document.getElementById('warm'), bright = document.getElementById('bright');
+  let timer;
+  function apply() {
+    const w = warm.value / 100, b = bright.value / 100;
+    const g = Math.round(250 - 52 * w), bl = Math.round(240 - 110 * w);
+    body.style.background = `rgb(${Math.round(255*b)},${Math.round(g*b)},${Math.round(bl*b)})`;
+  }
+  warm.oninput = bright.oninput = () => { apply(); keep(); };
+  function keep() { clearTimeout(timer); timer = setTimeout(() => panel.classList.remove('show'), 4000); }
+  document.addEventListener('click', e => {
+    if (panel.contains(e.target)) return;
+    panel.classList.toggle('show'); hint.style.opacity = 0; keep();
+  });
+  document.getElementById('fs').onclick = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch (e) {}
+    keep();
+  };
+  document.addEventListener('fullscreenchange', () => {
+    document.getElementById('fs').textContent = document.fullscreenElement ? 'Exit full screen' : 'Enter full screen';
+  });
+  setTimeout(() => hint.style.opacity = 0, 4000);
+  apply();
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
